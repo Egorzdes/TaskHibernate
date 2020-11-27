@@ -1,6 +1,7 @@
 package jm.task.core.jdbc.dao;
 
 import jm.task.core.jdbc.model.User;
+import jm.task.core.jdbc.util.HibernateUtil;
 import jm.task.core.jdbc.util.Util;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -36,7 +37,7 @@ public class UserDaoHibernateImpl implements UserDao {
         try (SessionFactory factory = util.Configuration().buildSessionFactory();
              Session session = factory.openSession()) {
             Transaction tx = session.beginTransaction();
-            Query deleteQuery = session.createNativeQuery("DROP TABLE mydbtest.user;");
+            Query deleteQuery = session.createNativeQuery("DROP TABLE mydbtest.users;");
             deleteQuery.executeUpdate();
             System.out.println("таблица User удалена");
             tx.commit();
@@ -66,22 +67,12 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public void removeUserById(long id) {
-        Util util = new Util();
-        Session session = util.getSession();
-        final Transaction transaction = session.getTransaction();
-        transaction.begin();
-        try {
-            User user = new User();
-            user.setId(id);
-            session.delete(user);
-            transaction.commit();
-        }catch (Exception e) {
-            e.printStackTrace();
-            transaction.rollback();
-        } finally {
-            session.close();
-            util.closeSessionFactory();
-        }
+        Session session = HibernateUtil.getSessionFactory().openSession();
+        Transaction tr = session.beginTransaction();
+        User user = (User) session.get(User.class, id);
+        session.delete(user);
+        tr.commit();
+        session.close();
     }
 
 
@@ -91,7 +82,7 @@ public class UserDaoHibernateImpl implements UserDao {
         List<User> userList = new ArrayList<>();
         try (SessionFactory factory = util.Configuration().buildSessionFactory();
              Session session = factory.openSession()) {
-            List<Object[]> users = session.createNativeQuery("SELECT * FROM user;").list();
+            List<Object[]> users = session.createNativeQuery("SELECT * FROM users;").list();
             for (Object[] objects : users) {
                 User user1 = new User((String) objects[3], (String) objects[2], (byte) objects[1]);
                 userList.add(user1);
@@ -110,7 +101,7 @@ public class UserDaoHibernateImpl implements UserDao {
         try (SessionFactory factory = util.Configuration().buildSessionFactory();
              Session session = factory.openSession()) {
             Transaction tx = session.beginTransaction();
-            Query deleteQuery = session.createNativeQuery("TRUNCATE TABLE user;");
+            Query deleteQuery = session.createNativeQuery("TRUNCATE TABLE users;");
             deleteQuery.executeUpdate();
             System.out.println("таблица user очищена");
             tx.commit();
